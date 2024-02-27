@@ -1,0 +1,180 @@
+﻿@model Info
+
+@{
+    ViewData["Title"] = "Workout";
+
+    var restCount = Model.RoundCount - 1;
+}
+
+<div id="startScreen" class="container vh-100 vw-100 fixed-top d-flex bg-dark" style="z-index: 99;">
+    <div id="startBtn" onclick="startingCountdown()" class="btn mx-auto my-auto"><p>Start</p></div>
+</div>
+
+<div class="text-center d-flex flex-column">
+    <div class="my-auto">
+        <div class="row">
+            <h1 id="timer" style="font-size: 750%">3</h1>
+        </div>
+
+        <div class="row mt-5 w-75 mx-auto mb-5">
+            <div class="col col-md-3 offset-md-2">
+                <div id="roundPill" class="bg-dark border rounded-pill">
+                    <div class="row">
+                        <p class="m-0 mt-3">Round Count</p>
+                    </div>
+                    <div class="row">
+                        <p class="m-0 mb-3"><span id="roundNumber">0</span>/@Model.RoundCount</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col col-md-3 offset-md-2">
+                <div id="restPill" class="bg-dark border rounded-pill">
+                    <div class="row">
+                        <p class="m-0 mt-3">Rest Count</p>
+                    </div>
+                    <div class="row">
+                        <p class="m-0 mb-3"><span id="restNumber">0</span>/@restCount</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row fixed-bottom mb-5" style="z-index: 1;">
+            <div class="col my-5">
+                <button id="pauseBtn" onclick="pauseTimer(this)" class="btn btn-danger w-75 p-3 text-light disabled">PAUSE</button>
+                <button id="resumeBtn" onclick="resumeTimer(this)" class="btn btn-success w-75 p-3 text-light d-none">RESUME</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var countdownAudio = new Audio('../../Audio/countdown.mp3');
+    var beep1Audio = new Audio('../../Audio/beep1.mp3');
+    var beep2Audio = new Audio('../../Audio/beep2.mp3');
+    var pause = false, timeLeft;
+    var roundNumber = 1, restNumber = 0;
+    var resting = false;
+
+    function pauseTimer(parameter) {
+        pause = true;
+        document.getElementById('pauseBtn').classList.add('d-none');
+        document.getElementById('resumeBtn').classList.remove('d-none');
+    }
+
+    function resumeTimer(parameter) {
+        pause = false;
+        var [minutes, seconds] = convertMsToTime(timeLeft);
+        countdown(minutes, seconds);
+
+        document.getElementById('resumeBtn').classList.add('d-none');
+        document.getElementById('pauseBtn').classList.remove('d-none');
+    }
+
+    function convertMsToTime(milliseconds) {
+        var seconds = Math.floor(milliseconds / 1000);
+        var minutes = Math.floor(seconds / 60);
+
+        seconds = seconds % 60;
+        minutes = minutes % 60;
+
+        return [minutes, seconds];
+    }
+
+    function countdown(minutes, seconds) {
+        var element, endTime, hours, mins, time;
+
+        function twoDigits(n) {
+            return (n <= 9 ? "0" + n : n);
+        }
+
+        function updateTimer() {
+            if (pause) {
+                return;
+            }
+
+            timeLeft = endTime - (+new Date);
+
+            if (timeLeft < 4000 && timeLeft > 1000) {
+                beep2Audio.play();
+            }
+
+            if (timeLeft < 100) {
+                element.innerHTML = "00:00";
+                resting = !resting;
+
+                if (resting) {
+                    if (roundNumber == @Model.RoundCount) {
+                        document.getElementById('roundPill').classList.remove('border-success');
+                        element.innerHTML = "Finished";
+                        return;
+                    }
+                    else {
+                        restNumber++;
+                        document.getElementById('restNumber').innerHTML = restNumber;
+                        restCountdown();
+                    }
+                }
+                else {
+                    roundNumber++;
+                    document.getElementById('roundNumber').innerHTML = roundNumber;
+                    roundCountdown();
+                }
+            }
+            else {
+                time = new Date(timeLeft);
+                hours = time.getUTCHours();
+                mins = time.getUTCMinutes();
+
+                if (mins < 9) {
+                    mins = '0' + mins
+                }
+
+                element.innerHTML = (hours ? hours + ':' + twoDigits(mins) : mins) + ':' + twoDigits(time.getUTCSeconds());
+                setTimeout(updateTimer, time.getUTCMilliseconds() + 500);
+            }
+        }
+
+        element = document.getElementById('timer');
+        endTime = (+new Date) + 1000 * (60 * minutes + seconds) + 500;
+        updateTimer();
+    }
+
+    function startingCountdown() {
+        document.getElementById('startScreen').classList.add('visually-hidden');
+        countdownAudio.play();
+
+        function handleTimer() {
+            if (count > 0) {
+                $('#timer').html(count);
+                count--;        
+            }
+            else if(count === 0){
+                $('#timer').html('GO!');
+                count--;
+            }
+            else {
+                document.getElementById('pauseBtn').classList.remove('disabled');
+                clearInterval(timer);
+                roundCountdown();
+                //set border
+            }
+        }
+
+        var count = 2;
+        var timer = setInterval(function () { handleTimer(count); }, 1000);
+    }
+   
+    function roundCountdown() {
+        document.getElementById('roundPill').classList.add('border-success');
+        document.getElementById('restPill').classList.remove('border-success');
+        countdown(@Model.RoundTime, 0);
+    }
+    
+    function restCountdown() {
+        document.getElementById('restPill').classList.add('border-success');
+        document.getElementById('roundPill').classList.remove('border-success');
+        countdown(@Model.RestTime, 0);
+    }
+</script>
