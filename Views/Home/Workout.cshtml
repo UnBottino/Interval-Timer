@@ -155,6 +155,7 @@
                 count--;
             }
             else {
+                document.getElementById('roundNumber').innerHTML = roundNumber;
                 document.getElementById('pauseBtn').classList.remove('disabled');
                 clearInterval(timer);
                 roundCountdown();
